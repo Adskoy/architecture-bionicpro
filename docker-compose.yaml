@@ -11,6 +11,7 @@ services:
       - ./postgres-keycloak-data:/var/lib/postgresql/data
     ports:
       - "5433:5432"
+      - 
   keycloak:
     image: quay.io/keycloak/keycloak:21.1
     environment:
@@ -20,6 +21,12 @@ services:
       KC_DB_URL: jdbc:postgresql://keycloak_db:5432/keycloak_db
       KC_DB_USERNAME: keycloak_user
       KC_DB_PASSWORD: keycloak_password
+      KC_HEALTH_ENABLED: true
+    healthcheck:
+      test: [ 'CMD-SHELL', '[ -f /tmp/HealthCheck.java ] || echo "public class HealthCheck { public static void main(String[] args) throws java.lang.Throwable { java.net.URI uri = java.net.URI.create(args[0]); System.exit(java.net.HttpURLConnection.HTTP_OK == ((java.net.HttpURLConnection)uri.toURL().openConnection()).getResponseCode() ? 0 : 1); } }" > /tmp/HealthCheck.java && java /tmp/HealthCheck.java http://localhost:9000/health/live' ]
+      interval: 5s
+      timeout: 5s
+      retries: 5
     command: 
       - start-dev
       - --import-realm
@@ -29,6 +36,8 @@ services:
       - "8080:8080"
     depends_on:
       - keycloak_db
+      
+      
   frontend:
     build:
       context: ./frontend
@@ -40,3 +49,17 @@ services:
       REACT_APP_KEYCLOAK_URL: http://localhost:8080
       REACT_APP_KEYCLOAK_REALM: reports-realm
       REACT_APP_KEYCLOAK_CLIENT_ID: reports-frontend
+      
+  bionicpro.api:
+    image: bionicpro.api
+    build:
+      context: .
+      dockerfile: api/BionicPro.API/Dockerfile
+    depends_on:
+      keycloak:
+        condition: service_healthy
+    ports:
+      - "5000:8080"
+    environment:
+      Identity__Configuration: 
+
