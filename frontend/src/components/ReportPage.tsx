@@ -5,6 +5,7 @@ const ReportPage: React.FC = () => {
   const { keycloak, initialized } = useKeycloak();
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
+  const [report, setReport] = useState<string>();
 
   const downloadReport = async () => {
     if (!keycloak?.token) {
@@ -21,6 +22,8 @@ const ReportPage: React.FC = () => {
           'Authorization': `Bearer ${keycloak.token}`
         }
       });
+      
+      setReport(JSON.stringify(await response.json(), null, 4));
 
       
     } catch (err) {
@@ -48,7 +51,7 @@ const ReportPage: React.FC = () => {
   }
 
   return (
-    <div className="flex flex-col items-center justify-center min-h-screen bg-gray-100">
+    <div className="flex flex-col items-center justify-center min-h-screen gap-8 bg-gray-100">
       <div className="p-8 bg-white rounded-lg shadow-md">
         <h1 className="text-2xl font-bold mb-6">Usage Reports</h1>
         
@@ -68,6 +71,12 @@ const ReportPage: React.FC = () => {
           </div>
         )}
       </div>
+
+      {report && (
+        <textarea cols={50} rows={10} className="mt-4 p-4 basis-full">
+          {report}
+        </textarea>
+      )}
     </div>
   );
 };
