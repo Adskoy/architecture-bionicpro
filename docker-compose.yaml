@@ -1,4 +1,5 @@
 version: '3.8'
+name: sprint-8
 
 services:
   keycloak_db:
@@ -11,6 +12,7 @@ services:
       - ./postgres-keycloak-data:/var/lib/postgresql/data
     ports:
       - "5433:5432"
+
   keycloak:
     image: quay.io/keycloak/keycloak:21.1
     environment:
@@ -20,6 +22,7 @@ services:
       KC_DB_URL: jdbc:postgresql://keycloak_db:5432/keycloak_db
       KC_DB_USERNAME: keycloak_user
       KC_DB_PASSWORD: keycloak_password
+      KC_HEALTH_ENABLED: true
     command: 
       - start-dev
       - --import-realm
@@ -29,6 +32,7 @@ services:
       - "8080:8080"
     depends_on:
       - keycloak_db
+            
   frontend:
     build:
       context: ./frontend
@@ -40,3 +44,19 @@ services:
       REACT_APP_KEYCLOAK_URL: http://localhost:8080
       REACT_APP_KEYCLOAK_REALM: reports-realm
       REACT_APP_KEYCLOAK_CLIENT_ID: reports-frontend
+
+  api:
+    image: bionicpro-api
+    build:
+      context: .
+      dockerfile: api/Dockerfile
+    depends_on:
+      - keycloak
+    ports:
+      - "8000:8080"
+    environment:
+      ASPNETCORE_ENVIRONMENT: Development
+      Identity__Authority: http://keycloak:8080/realms/reports-realm
+      Identity__ClientId: reports-api
+      Identity__ClientSecret: oNwoLQdvJAvRcL89SydqCWCe5ry1jMgq
+
